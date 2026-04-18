@@ -1,0 +1,19 @@
+BROKER SCHEMA tmb.cb.ace
+
+
+CREATE DATABASE MODULE storeResponse
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		DECLARE reqData BLOB;
+		DECLARE options INTEGER BITOR(RootBitStream, ValidateNone);
+		
+		
+		SET Environment.Variables.FinacleResp = Root.XMLNSC;
+		
+		SET reqData = ASBITSTREAM(Root.XMLNSC OPTIONS options CCSID 1208);
+		CALL tmb.ace.util.audit('finacle Response from VIGNESH','', 'transactionId#' || Environment.Variables.transactionId,reqData);
+		RETURN TRUE;
+	END;
+
+END MODULE;
+ 

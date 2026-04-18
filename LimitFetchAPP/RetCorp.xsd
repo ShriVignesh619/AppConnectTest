@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.finacle.com/fixml" xmlns:Q1="http://www.finacle.com/fixml">
+  <xsd:element name="backendCode">
+    <xsd:complexType/>
+  </xsd:element>
+  <xsd:element name="RetCustInq_CustomData">
+    <xsd:complexType/>
+  </xsd:element>
+  <xsd:element name="ChannelId" type="xsd:string"/>
+  <xsd:element name="getCorporateCustomerDetailsRequest">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:customerDetailsInput"/>
+        <xsd:element ref="Q1:getCorporateCustomerDetails_CustomData"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="RetCustInqRequest">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:RetCustInqRq"/>
+        <xsd:element ref="Q1:RetCustInq_CustomData"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="CustId" type="xsd:string"/>
+  <xsd:element name="ChannelCustId">
+    <xsd:complexType/>
+  </xsd:element>
+  <xsd:element name="RequestUUID" type="xsd:string"/>
+  <xsd:element name="Body">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:RetCustInqRequest"/>
+        <xsd:element ref="Q1:getCorporateCustomerDetailsRequest"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="cifId" type="xsd:string"/>
+  <xsd:element name="RetCustInqRq">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:ChannelId"/>
+        <xsd:element ref="Q1:ChannelCustId"/>
+        <xsd:element ref="Q1:CustId"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="FIXML">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:Header"/>
+        <xsd:element ref="Q1:Body"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="customerDetailsInput">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:backendCode"/>
+        <xsd:element ref="Q1:backendKeyValue"/>
+        <xsd:element ref="Q1:cifId"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="ServiceRequestId" type="xsd:string"/>
+  <xsd:element name="backendKeyValue">
+    <xsd:complexType/>
+  </xsd:element>
+  <xsd:element name="ServiceRequestVersion" type="xsd:string"/>
+  <xsd:element name="MessageDateTime" type="xsd:string"/>
+  <xsd:element name="TimeZone" type="xsd:string"/>
+  <xsd:element name="MessageKey">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:RequestUUID"/>
+        <xsd:element ref="Q1:ServiceRequestId"/>
+        <xsd:element ref="Q1:ServiceRequestVersion"/>
+        <xsd:element ref="Q1:ChannelId"/>
+        <xsd:element ref="Q1:LanguageId"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="getCorporateCustomerDetails_CustomData">
+    <xsd:complexType/>
+  </xsd:element>
+  <xsd:element name="Header">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:RequestHeader"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="RequestHeader">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:MessageKey"/>
+        <xsd:element ref="Q1:RequestMessageInfo"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="RequestMessageInfo">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="Q1:BankId"/>
+        <xsd:element ref="Q1:TimeZone"/>
+        <xsd:element ref="Q1:MessageDateTime"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="BankId" type="xsd:string"/>
+  <xsd:element name="LanguageId" type="xsd:string"/>
+</xsd:schema>

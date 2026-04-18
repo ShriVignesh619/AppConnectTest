@@ -1,0 +1,178 @@
+
+
+
+
+
+
+BROKER SCHEMA tmb.cb.ace
+DECLARE ns NAMESPACE 'http://www.finacle.com/fixml';
+DECLARE FinacleEndPoint EXTERNAL CHARACTER;
+DECLARE Environment EXTERNAL CHARACTER;
+DECLARE CapturePayload EXTERNAL BOOLEAN;
+
+
+CREATE COMPUTE MODULE performDBOps
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+
+		SET Environment.Variables.transactionId = UUIDASCHAR;
+		SET Environment.Variables.MsgKey = 'accountId';
+		SET Environment.Variables.MsgValue = InputRoot.JSON.Data.accountId;
+		
+		DECLARE accountId CHARACTER InputRoot.JSON.Data.accountId;
+		DECLARE custLimits ROW;
+		DECLARE custType , status CHARACTER;
+		DECLARE key1,key2,transactionId , decryptedData CHARACTER;
+		DECLARE reqData BLOB;
+		DECLARE options INTEGER BITOR(RootBitStream, ValidateNone);
+		
+		--Validating the account number whether it is 15 digits for the given procedure using common utility.
+		CALL tmb.ace.util.matchPattern(accountId,'^\d{15}$') INTO status;
+		
+		IF(status = 'invalid') THEN
+			THROW USER EXCEPTION MESSAGE 2951 values ('Account Id does not match the given Pattern');			
+		END IF;
+		
+		
+		--	To log the  incoming message in the data base as audit log using common utility tool
+		SET key1 = 'accountId#' || accountId;
+		SET key2 = 'transactionId#' || Environment.Variables.transactionId;
+		SET reqData = ASBITSTREAM(InputRoot.JSON OPTIONS options CCSID 1208);
+		
+		CALL tmb.ace.util.encrypt(CAST(reqData as CHARACTER CCSID 1208),'TRAFALGAR D LAW','AES/ECB/PKCS5Padding') INTO reqData;
+		
+		SET Environment.Variables.cipherText = CAST(reqData as CHARACTER CCSID 1208);
+		
+		CALL tmb.ace.util.decrypt(CAST(reqData as CHARACTER CCSID 1208),'TRAFALGAR D LAW','AES/ECB/PKCS5Padding') INTO decryptedData;
+		
+		--inserting into audit db for the incoming request using common utility tool.
+		IF (CapturePayload) THEN
+		CALL tmb.ace.util.audit('Received request from VIGNESH', key1, key2, reqData);
+		ELSE
+		CALL tmb.ace.util.audit('Received request from VIGNESH', key1, key2, NULL);
+		END IF;
+		-- CALL CopyMessageHeaders()
+		--Database.<DSN>.<Schema>.DBObject
+		--Retrieving custId using AccountId from GAM
+		SET Environment.Variables.custId = THE(SELECT ITEM G.CUST_ID FROM Database.TBAADM.GAM AS G WHERE G.FORACID = accountId) ;
+		
+		
+		--Retrieving Customer Limits using Cust ID from GAM
+		SET custLimits.record[] = SELECT lt.LIMIT_PREFIX AS limitPrefix , lt.LIMIT_SUFFIX AS limitSuffix , lt.SANCT_LIM AS limitSanct , lt.LIAB AS liab FROM Database.TBAADM.LLT AS lt WHERE
+		lt.CUST_ID = Environment.Variables.custId AND lt.DEL_FLG <> 'Y';
+
+		SET custType = THE(SELECT ITEM AC.CORP_ID FROM Database.CRMUSER.ACCOUNTS AS AC where AC.ORGKEY = TRIM(Environment.Variables.custId));
+
+		IF(custType IS NULL) THEN
+		SET OutputRoot.XMLNSC.ns:FIXML.ns:Header.ns:RequestHeader.ns:MessageKey.ns:RequestUUID = UUIDASCHAR;
+
+		DECLARE outRef REFERENCE TO OutputRoot.XMLNSC.ns:FIXML.ns:Header.ns:RequestHeader.ns:MessageKey;
+
+		SET outRef.ns:ServiceRequestId = 'RetCustInq';
+		SET outRef.ns:ServiceRequestVersion = '10.2';
+		SET outRef.ns:ChannelId = 'CRM';
+		SET outRef.ns:LanguageId = 'en_US';
+
+		MOVE outRef PARENT;
+		SET outRef.ns:RequestMessageInfo.ns:BankId ='01';
+		SET outRef.ns:RequestMessageInfo.TimeZone ='GMT+05:30';
+		SET outRef.ns:RequestMessageInfo.MessageDateTime=CURRENT_TIMESTAMP;
+		SET OutputRoot.XMLNSC.ns:FIXML.ns:Body.ns:RetCustInqRequest.ns:RetCustInqRq.ns:CustId = TRIM(Environment.Variables.custId);
+		--SET OutputLocalEnvironment.Destination.HTTP.RequestURL ='https://finwebuat.tmb.in:10500/FISERVLET/fihttp';
+		SET OutputLocalEnvironment.Destination.HTTP.RequestURL = FinacleEndPoint;
+	ELSE
+		SET OutputRoot.XMLNSC.ns:FIXML.ns:Header.ns:RequestHeader.ns:MessageKey.ns:RequestUUID = UUIDASCHAR;
+
+		DECLARE outRef REFERENCE TO OutputRoot.XMLNSC.ns:FIXML.ns:Header.ns:RequestHeader.ns:MessageKey;
+
+		SET outRef.ns:ServiceRequestId = 'getCorporateCustomerDetails';
+		SET outRef.ns:ServiceRequestVersion = '10.2';
+		SET outRef.ns:ChannelId = 'CRM';
+		SET outRef.ns:LanguageId = 'en_US';
+
+		MOVE outRef PARENT;
+		SET outRef.ns:RequestMessageInfo.ns:BankId ='01';
+		SET outRef.ns:RequestMessageInfo.TimeZone ='GMT+05:30';
+		SET outRef.ns:RequestMessageInfo.MessageDateTime=CURRENT_TIMESTAMP;
+		SET OutputRoot.XMLNSC.ns:FIXML.ns:Body.ns:getCorporateCustomerDetailsRequest.ns:customerDetailsInput.ns:cifId = TRIM(Environment.Variables.custId);
+		--SET OutputLocalEnvironment.Destination.HTTP.RequestURL ='https://finwebuat.tmb.in:10500/FISERVLET/fihttp';
+		SET OutputLocalEnvironment.Destination.HTTP.RequestURL = FinacleEndPoint;
+	END IF;
+	
+	SET reqData = ASBITSTREAM(OutputRoot.XMLNSC OPTIONS options CCSID 1208);
+	CALL tmb.ace.util.audit('Limit Details Req VIGNESH', key1, key2,reqData);	
+
+	PROPAGATE TO TERMINAL 'out1';
+
+	DECLARE finacleRespRef REFERENCE TO Environment.Variables.FinacleResp.ns:FIXML.ns:Body.*[1];
+	DECLARE index INTEGER 1;
+	
+	SET OutputRoot.HTTPReplyHeader.decryptedReq = BASE64ENCODE(decryptedData);
+	SET OutputRoot.HTTPReplyHeader.transactionId  = SUBSTRING(Environment.Variables.transactionId AFTER '#');
+	
+	IF (FIELDNAME(finacleRespRef) = 'getCorporateCustomerDetailsResponse') THEN
+		SET OutputRoot.JSON.Data.custId = Environment.Variables.custId;
+		SET OutputRoot.JSON.Data.custType = 'CORPORATE';
+		SET OutputRoot.JSON.Data.name = finacleRespRef.ns:CorporateCustomerDetails.ns:corpDet.ns:corporate_name;
+		SET OutputRoot.JSON.Data.DOI = finacleRespRef.ns:CorporateCustomerDetails.ns:corpDet.ns:date_of_incorporation;
+
+		CREATE FIELD OutputRoot.JSON.Data.beneficiaries IDENTITY(JSON.Array)beneficiaries;
+
+		FOR beneficiary AS finacleRespRef.ns:CorporateCustomerDetails.ns:beneficialownerDet[] DO
+			SET OutputRoot.JSON.Data.beneficiaries.Item[index].ben_cif = beneficiary.ns:beneficiarycifid;
+			SET index = index + 1;
+
+		END FOR;
+		SET index = 1;
+		CREATE FIELD OutputRoot.JSON.Data.limits IDENTITY(JSON.Array)limits;
+		FOR lt AS custLimits.record[] DO
+			SET OutputRoot.JSON.Data.limits.Item[index].Prefix = lt.limitPrefix;
+			SET OutputRoot.JSON.Data.limits.Item[index].Suffix = lt.limitSuffix;
+			SET OutputRoot.JSON.Data.limits.Item[index].Sanction_Amount = lt.limitSanct;
+			SET OutputRoot.JSON.Data.limits.Item[index].Liability = lt.liab;
+			SET index = index + 1;
+
+		END FOR;
+	ELSEIF(FIELDNAME(finacleRespRef) = 'RetCustInqResponse') THEN
+		SET OutputRoot.JSON.Data.custId = Environment.Variables.custId;
+		SET OutputRoot.JSON.Data.custType = 'RETAIL';
+		SET OutputRoot.JSON.Data.name = finacleRespRef.ns:RetCustInqRs.ns:RetCustDtls.ns:Name;
+		SET OutputRoot.JSON.Data.Constitution = finacleRespRef.ns:RetCustInqRs.ns:RetCustDtls.ns:ConstitutionCode;
+		SET OutputRoot.JSON.Data.phonenumber = THE(SELECT ITEM P.ns:PhoneNumLocalCode From
+		finacleRespRef.ns:RetCustInqRs.ns:RetCustDtls.ns:PhoneEmailInfo[] AS P WHERE P.ns:PhoneEmailType = 'CELLPH');
+		SET index = 1;
+		CREATE FIELD OutputRoot.JSON.Data.limits IDENTITY(JSON.Array)limits;
+		FOR lt AS custLimits.record[] DO
+			SET OutputRoot.JSON.Data.limits.Item[index].Prefix = lt.limitPrefix;
+			SET OutputRoot.JSON.Data.limits.Item[index].Suffix = lt.limitSuffix;
+			SET OutputRoot.JSON.Data.limits.Item[index].Sanction_Amount = lt.limitSanct;
+			SET OutputRoot.JSON.Data.limits.Item[index].Liability = lt.liab;
+			SET index = index + 1;
+
+		END FOR;
+	ELSE
+		SET OutputRoot.JSON.Data.errorCode = finacleRespRef.*[1].ns:ErrorDetail.ns:ErrorCode;
+		SET OutputRoot.JSON.Data.errorDesc = finacleRespRef.*[1].ns:ErrorDetail.ns:ErrorDesc;
+	END IF;
+	
+	--SET OutputRoot.JSON.Data.custLimits.record[] = custLimits.record[];
+	--SET OutputRoot.JSON.Data.custType = custType;
+	--SET OutputRoot.XMLNSC.ns:FIXML = Environment.Variables.FinacleResp.ns:FIXML;
+	-- CALL CopyEntireMessage();
+	RETURN TRUE;
+END;
+
+CREATE PROCEDURE CopyMessageHeaders() BEGIN
+	DECLARE I INTEGER 1;
+	DECLARE J INTEGER;
+	SET J = CARDINALITY(InputRoot.*[]);
+	WHILE I < J DO
+		SET OutputRoot.*[I] = InputRoot.*[I];
+		SET I = I + 1;
+	END WHILE;
+END;
+
+CREATE PROCEDURE CopyEntireMessage() BEGIN
+	SET OutputRoot = InputRoot;
+END;
+END MODULE;

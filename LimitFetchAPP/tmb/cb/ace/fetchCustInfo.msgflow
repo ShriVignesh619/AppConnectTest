@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ComIbmCompute.msgnode="ComIbmCompute.msgnode" xmlns:ComIbmDatabase.msgnode="ComIbmDatabase.msgnode" xmlns:ComIbmResetContentDescriptor.msgnode="ComIbmResetContentDescriptor.msgnode" xmlns:ComIbmWSInput.msgnode="ComIbmWSInput.msgnode" xmlns:ComIbmWSReply.msgnode="ComIbmWSReply.msgnode" xmlns:ComIbmWSRequest.msgnode="ComIbmWSRequest.msgnode" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:eflow="http://www.ibm.com/wbi/2005/eflow"
+    xmlns:tmb_ace_util_errorHandlerSF.subflow="tmb/ace/util/errorHandlerSF.subflow" xmlns:utility="http://www.ibm.com/wbi/2005/eflow_utility" nsURI="tmb/cb/ace/fetchCustInfo.msgflow" nsPrefix="tmb_cb_ace_fetchCustInfo.msgflow">
+  <eClassifiers xmi:type="eflow:FCMComposite" name="FCMComposite_1" nodeLayoutStyle="RECTANGLE">
+    <eSuperTypes href="http://www.ibm.com/wbi/2005/eflow#//FCMBlock"/>
+    <eStructuralFeatures xmi:type="ecore:EAttribute" xmi:id="Property.FinacleEndPoint" name="FinacleEndPoint" lowerBound="1" defaultValueLiteral="https://finwebuat.tmb.in:10500/FISERVLET/fihttp">
+      <eType xmi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eStructuralFeatures>
+    <eStructuralFeatures xmi:type="ecore:EAttribute" xmi:id="Property.Environment" name="Environment">
+      <eType xmi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eStructuralFeatures>
+    <eStructuralFeatures xmi:type="ecore:EAttribute" xmi:id="Property.CapturePayload" name="CapturePayload" lowerBound="1" defaultValueLiteral="true">
+      <eType xmi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    </eStructuralFeatures>
+    <translation xmi:type="utility:TranslatableString" key="fetchCustInfo" bundleName="tmb/cb/ace/fetchCustInfo" pluginId="LimitFetchApp"/>
+    <colorGraphic16 xmi:type="utility:GIFFileGraphic" resourceName="platform:/plugin/LimitFetchApp/icons/full/obj16/fetchCustInfo.gif"/>
+    <colorGraphic32 xmi:type="utility:GIFFileGraphic" resourceName="platform:/plugin/LimitFetchApp/icons/full/obj30/fetchCustInfo.gif"/>
+    <composition>
+      <nodes xmi:type="ComIbmWSInput.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_1" location="54,50" URLSpecifier="/v1/account" messageDomainProperty="JSON" timeoutForClient="350">
+        <translation xmi:type="utility:ConstantString" string="ReceiveRequest"/>
+      </nodes>
+      <nodes xmi:type="ComIbmWSReply.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_2" location="705,48">
+        <translation xmi:type="utility:ConstantString" string="HTTP Reply"/>
+      </nodes>
+      <nodes xmi:type="ComIbmCompute.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_3" location="324,38" dataSource="TMBCBSUAT" computeExpression="esql://routine/tmb.cb.ace#performDBOps.Main" computeMode="destinationAndMessage">
+        <translation xmi:type="utility:ConstantString" string="performDBOps"/>
+      </nodes>
+      <nodes xmi:type="ComIbmWSRequest.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_4" location="628,187" rotation="TOP_TO_BOTTOM" URLSpecifier="http://dummy/rest" httpVersion="1.1" protocol="TLS" messageDomainProperty="XMLNSC">
+        <translation xmi:type="utility:ConstantString" string="invokeFinacle"/>
+      </nodes>
+      <nodes xmi:type="ComIbmDatabase.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_5" location="325,296" rotation="RIGHT_TO_LEFT" dataSource="TMBCBSUAT" statement="esql://routine/tmb.cb.ace#storeResponse.Main">
+        <translation xmi:type="utility:ConstantString" string="storeResponse"/>
+      </nodes>
+      <nodes xmi:type="ComIbmResetContentDescriptor.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_7" location="831,266" rotation="TOP_TO_BOTTOM" messageDomain="XMLNSC" resetMessageDomain="true">
+        <translation xmi:type="utility:ConstantString" string="Reset Content Descriptor"/>
+      </nodes>
+      <nodes xmi:type="tmb_ace_util_errorHandlerSF.subflow:FCMComposite_1" xmi:id="FCMComposite_1_8" location="327,191" outputFilename="fetchLimits_error.txt">
+        <translation xmi:type="utility:ConstantString" string="errorHandlerSF"/>
+      </nodes>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_1" targetNode="FCMComposite_1_2" sourceNode="FCMComposite_1_3" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_2" targetNode="FCMComposite_1_3" sourceNode="FCMComposite_1_1" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_3" targetNode="FCMComposite_1_4" sourceNode="FCMComposite_1_3" sourceTerminalName="OutTerminal.out1" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_5" targetNode="FCMComposite_1_5" sourceNode="FCMComposite_1_4" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_6" targetNode="FCMComposite_1_7" sourceNode="FCMComposite_1_4" sourceTerminalName="OutTerminal.error" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_7" targetNode="FCMComposite_1_5" sourceNode="FCMComposite_1_7" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_9" targetNode="FCMComposite_1_8" sourceNode="FCMComposite_1_1" sourceTerminalName="OutTerminal.catch" targetTerminalName="InTerminal.Input"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_10" targetNode="FCMComposite_1_2" sourceNode="FCMComposite_1_8" sourceTerminalName="OutTerminal.Output" targetTerminalName="InTerminal.in"/>
+    </composition>
+    <propertyOrganizer>
+      <propertyDescriptor groupName="Group.Basic" configurable="true" userDefined="true" describedAttribute="Property.FinacleEndPoint">
+        <propertyName xmi:type="utility:TranslatableString" key="Property.FinacleEndPoint" bundleName="tmb/cb/ace/fetchCustInfo" pluginId="LimitFetchApp"/>
+        <propertyDescriptor groupName="Group.Basic" configurable="true" userDefined="true" describedAttribute="Property.Environment">
+          <propertyName xmi:type="utility:TranslatableString" key="Property.Environment" bundleName="tmb/cb/ace/fetchCustInfo" pluginId="LimitFetchApp"/>
+          <propertyDescriptor groupName="Group.Basic" configurable="true" userDefined="true" describedAttribute="Property.CapturePayload">
+            <propertyName xmi:type="utility:TranslatableString" key="Property.CapturePayload" bundleName="tmb/cb/ace/fetchCustInfo" pluginId="LimitFetchApp"/>
+          </propertyDescriptor>
+        </propertyDescriptor>
+      </propertyDescriptor>
+    </propertyOrganizer>
+    <stickyBoard/>
+  </eClassifiers>
+</ecore:EPackage>
