@@ -1,0 +1,15 @@
+BROKER SCHEMA com.vicky.responsewrite
+
+
+CREATE COMPUTE MODULE WriteResponse_Compute1
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		 DELETE FIELD OutputRoot.*;
+
+        -- Set a simple success message
+        SET OutputRoot.Properties.ContentType = 'application/json';
+        SET OutputRoot.JSON.Data.status = 'success';
+        SET OutputRoot.JSON.Data.message = 'File written successfully';
+		RETURN TRUE;
+	END;
+END MODULE;

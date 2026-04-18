@@ -1,0 +1,17 @@
+BROKER SCHEMA com.vicky.responsewrite
+
+
+CREATE COMPUTE MODULE WriteResponse_Compute
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		 DECLARE content CHARACTER 'This is the output content.';
+		 DECLARE tsString CHARACTER;
+--SET OutputLocalEnvironment.Destination.File.Name = ts || '.txt';
+        SET tsString = CAST(CURRENT_TIMESTAMP AS CHARACTER FORMAT 'dd-MM-yyyy_HH-mm-ss');
+        
+        -- Store the content in the BLOB part of the message for FileOutput
+        SET OutputRoot.BLOB.BLOB = CAST(content AS BLOB CCSID InputRoot.Properties.CodedCharSetId);
+        SET OutputLocalEnvironment.Destination.File.Name = tsString ||'.txt';
+		RETURN TRUE;
+	END;
+END MODULE;
